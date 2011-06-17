@@ -80,14 +80,40 @@ module ActsAsTaggableOn::Taggable
 
         if options.delete(:exclude)
           tags_conditions = tag_list.map { |t| sanitize_sql(["#{acts_as_taggable_on_tag_model.table_name}.name #{ActsAsTaggableOn.like_operator} ?", t]) }.join(" OR ")
-          conditions << "#{table_name}.#{primary_key} NOT IN (SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id FROM #{acts_as_taggable_on_tagging_model.table_name} JOIN #{acts_as_taggable_on_tag_model.table_name} ON #{acts_as_taggable_on_tagging_model.table_name}.tag_id = #{acts_as_taggable_on_tag_model.table_name}.id AND (#{tags_conditions}) WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)} #{context_condition})"
+          conditions << <<-SQL
+#{table_name}.#{primary_key} NOT IN (
+  SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id
+  FROM #{acts_as_taggable_on_tagging_model.table_name}
+  JOIN #{acts_as_taggable_on_tag_model.table_name}
+  ON #{acts_as_taggable_on_tagging_model.table_name}.tag_id = #{acts_as_taggable_on_tag_model.table_name}.id
+  AND (#{tags_conditions})
+  WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)} #{context_condition}
+)
+SQL
 
         elsif options.delete(:any)
           tags_conditions = tag_list.map { |t| sanitize_sql(["#{acts_as_taggable_on_tag_model.table_name}.name #{ActsAsTaggableOn.like_operator} ?", t]) }.join(" OR ")
-          conditions << "#{table_name}.#{primary_key} IN (SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id FROM #{acts_as_taggable_on_tagging_model.table_name} JOIN #{acts_as_taggable_on_tag_model.table_name} ON #{acts_as_taggable_on_tagging_model.table_name}.tag_id = #{acts_as_taggable_on_tag_model.table_name}.id AND (#{tags_conditions}) WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)} #{context_condition})"
+          conditions << <<-SQL
+#{table_name}.#{primary_key} IN (
+  SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id
+  FROM #{acts_as_taggable_on_tagging_model.table_name}
+  JOIN #{acts_as_taggable_on_tag_model.table_name}
+  ON #{acts_as_taggable_on_tagging_model.table_name}.tag_id = #{acts_as_taggable_on_tag_model.table_name}.id
+  AND (#{tags_conditions})
+  WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)}
+  #{context_condition}
+)
+SQL
 
         elsif tag_list.empty? && options[:match_all]
-          conditions << "#{table_name}.#{primary_key} NOT IN (SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id FROM #{acts_as_taggable_on_tagging_model.table_name} WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)} #{context_condition})"
+          conditions << <<-SQL
+#{table_name}.#{primary_key} NOT IN (
+  SELECT #{acts_as_taggable_on_tagging_model.table_name}.taggable_id
+  FROM #{acts_as_taggable_on_tagging_model.table_name}
+  WHERE #{acts_as_taggable_on_tagging_model.table_name}.taggable_type = #{quote_value(base_class.name)}
+  #{context_condition}
+)
+SQL
 
         else
           tags = acts_as_taggable_on_tag_model.named_any(tag_list)
