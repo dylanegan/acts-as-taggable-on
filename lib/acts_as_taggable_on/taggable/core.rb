@@ -129,7 +129,8 @@ SQL
                             "  ON #{taggings_alias}.taggable_id = #{table_name}.#{primary_key}" +
                             " AND #{taggings_alias}.taggable_type = #{quote_value(base_class.name)}" +
                             " AND #{taggings_alias}.tag_id = #{tag.id}"
-            tagging_join << context_condition if context
+
+            tagging_join << sanitize_sql([" AND #{taggings_alias}.context = ?", context.to_s]) if context && !context.blank?
 
             joins << tagging_join
           end
